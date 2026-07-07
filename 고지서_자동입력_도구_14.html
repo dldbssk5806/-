@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>고지서 → 엑셀 자동입력</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EEF3F1;
+    --card:#FFFFFF;
+    --navy:#0B2545;
+    --navy-deep:#071A30;
+    --ink:#16324A;
+    --ink-soft:#4C6478;
+    --teal:#146F68;
+    --teal-light:#DCEEEA;
+    --amber:#B5761F;
+    --amber-light:#FBEBD0;
+    --amber-line:#E3B25C;
+    --coral:#B23A32;
+    --coral-light:#F6E1DE;
+    --line:#CFDBD8;
+    --line-soft:#E3EAE8;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(11,37,69,0.06), 0 8px 24px rgba(11,37,69,0.05);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--ink);
+    font-family:'IBM Plex Sans KR', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px;}
+
+  /* ---------- header ---------- */
+  header.top{
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-radius:16px;
+    padding:28px 28px 22px;
+    color:#EAF2F0;
+    position:relative;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  header.top svg.route{
+    position:absolute; right:-10px; top:-10px; opacity:.35; width:260px; height:180px;
+  }
+  header.top h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:26px;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+    display:flex; align-items:center; gap:10px;
+  }
+  header.top .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#79C9BE;
+    margin:0 0 10px;
+  }
+  header.top p.sub{
+    margin:0; font-size:13.5px; color:#B9CBD3; max-width:560px; line-height:1.6;
+  }
+
+  /* ---------- cards ---------- */
+  section.card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    margin-top:20px;
+    box-shadow:var(--shadow);
+  }
+  section.card h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:16px;
+    margin:0 0 4px;
+    display:flex; align-items:center; gap:8px;
+    color:var(--navy);
+  }
+  section.card h2 .num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    background:var(--teal-light);
+    color:var(--teal);
+    padding:3px 7px;
+    border-radius:5px;
+    font-weight:600;
+  }
+  section.card p.desc{
+    margin:0 0 16px; font-size:12.5px; color:var(--ink-soft); line-height:1.6;
+  }
+
+  /* ---------- mapping table ---------- */
+  .mapping-toggle{
+    display:flex; align-items:center; justify-content:space-between; cursor:pointer;
+  }
+  .mapping-toggle .chev{transition:transform .18s ease; color:var(--ink-soft);}
+  .mapping-toggle.open .chev{transform:rotate(90deg);}
+  #mappingBody{display:none; margin-top:14px;}
+  #mappingBody.open{display:block;}
+  .map-list{
+    display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;
+  }
+  .map-chip{
+    display:flex; align-items:center; gap:8px;
+    background:var(--teal-light); border:1px solid #BFE0DA;
+    border-radius:20px; padding:6px 6px 6px 12px; font-size:12.5px;
+  }
+  .map-chip .name{color:var(--ink); font-weight:500;}
+  .map-chip .code{
+    font-family:'IBM Plex Mono', monospace; font-weight:600; color:var(--teal);
+    background:#fff; padding:2px 7px; border-radius:10px;
+  }
+  .map-chip button{
+    border:none; background:transparent; color:#7A9490; cursor:pointer; font-size:13px;
+    width:18px; height:18px; line-height:1; border-radius:50%;
+  }
+  .map-chip button:hover{background:#c7ded9; color:var(--coral);}
+  .map-add{display:flex; gap:8px; flex-wrap:wrap;}
+  .map-add input{flex:1; min-width:140px;}
+
+  input[type=text], input[type=number]{
+    font-family:'IBM Plex Sans KR', sans-serif;
+    font-size:13px;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    background:#FBFCFC;
+    color:var(--ink);
+    outline:none;
+  }
+  input[type=text]:focus, input[type=number]:focus{border-color:var(--teal); background:#fff;}
+  button.btn{
+    font-family:'IBM Plex Sans KR', sans-serif;
+    font-weight:600;
+    font-size:13px;
+    border:none;
+    border-radius:8px;
+    padding:9px 16px;
+    cursor:pointer;
+    transition:transform .05s ease, filter .15s ease;
+  }
+  button.btn:active{transform:translateY(1px);}
+  button.btn.primary{background:var(--teal); color:#fff;}
+  button.btn.primary:hover{filter:brightness(1.08);}
+  button.btn.ghost{background:transparent; color:var(--teal); border:1px solid #BFE0DA;}
+  button.btn.ghost:hover{background:var(--teal-light);}
+  button.btn.dark{background:var(--navy); color:#fff;}
+  button.btn.dark:hover{filter:brightness(1.15);}
+  button.btn:disabled{background:#CBD3D1 !important; color:#8A9491 !important; cursor:not-allowed;}
+
+  /* ---------- dropzone ---------- */
+  #dropzone{
+    border:2px dashed #BFCFCB;
+    border-radius:12px;
+    padding:30px 20px;
+    text-align:center;
+    background:#FAFCFB;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  #dropzone.drag{border-color:var(--teal); background:var(--teal-light);}
+  #dropzone .icon{font-size:28px; margin-bottom:8px;}
+  #dropzone .main{font-size:14px; font-weight:600; color:var(--navy);}
+  #dropzone .hint{font-size:12px; color:var(--ink-soft); margin-top:4px;}
+  #fileInput{display:none;}
+  .dropzone-small{
+    border:2px dashed #BFCFCB;
+    border-radius:12px;
+    padding:16px 20px;
+    text-align:center;
+    background:#FAFCFB;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .dropzone-small.drag{border-color:var(--teal); background:var(--teal-light);}
+  .dropzone-small.loaded{border-color:#79C9BE; background:var(--teal-light);}
+  .dropzone-small .icon{font-size:20px; margin-bottom:4px;}
+  .dropzone-small .main{font-size:13px; font-weight:600; color:var(--navy);}
+  #mrnFileInput{display:none;}
+  #fileList{margin-top:14px; display:flex; flex-direction:column; gap:6px;}
+  .file-row{
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:12.5px; background:#F5F8F7; border:1px solid var(--line-soft);
+    border-radius:7px; padding:7px 10px;
+  }
+  .file-row .fname{font-family:'IBM Plex Mono', monospace; color:var(--ink);}
+  .file-row .fsize{color:var(--ink-soft);}
+
+  /* ---------- status ---------- */
+  #status{
+    margin-top:14px; font-size:12.5px; color:var(--ink-soft);
+    display:flex; align-items:center; gap:8px; min-height:18px;
+  }
+  #status .dot{
+    width:8px; height:8px; border-radius:50%; background:var(--teal);
+    animation:pulse 1s infinite ease-in-out;
+  }
+  @keyframes pulse{0%,100%{opacity:.35;}50%{opacity:1;}}
+
+  /* ---------- results table ---------- */
+  #resultsSection{display:none;}
+  .table-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:10px;}
+  table.results{
+    width:100%; border-collapse:collapse; font-size:12.5px; min-width:980px;
+  }
+  table.results thead th{
+    background:var(--navy); color:#DCEAE7; text-align:left;
+    font-size:11px; letter-spacing:.03em; text-transform:uppercase;
+    padding:10px 10px; position:sticky; top:0;
+    font-family:'IBM Plex Mono', monospace; font-weight:600;
+  }
+  table.results tbody tr{border-top:1px solid var(--line-soft);}
+  table.results tbody tr.warn{background:var(--amber-light);}
+  table.results tbody tr:hover{background:#F6FAF9;}
+  table.results td{padding:8px 10px; vertical-align:middle;}
+  table.results input[type=text], table.results input[type=number]{
+    width:100%; padding:6px 8px; font-size:12.5px;
+  }
+  table.results input.bad{border-color:var(--coral); background:#FFF6F5;}
+  .amt-input{font-family:'IBM Plex Mono', monospace; text-align:right;}
+  .vessel-cell{font-weight:600; color:var(--navy); white-space:nowrap;}
+  .fuzzy-note{font-size:10.5px; font-weight:500; color:var(--amber); white-space:nowrap; margin-top:2px;}
+  img.thumb{
+    width:92px; max-height:70px; object-fit:cover; object-position:top;
+    border-radius:6px; border:1px solid var(--line); cursor:zoom-in; display:block;
+  }
+  img.thumb:hover{border-color:var(--teal);}
+  .debug-box{
+    background:#0B2545; color:#BFE0DA; font-family:'IBM Plex Mono', monospace;
+    font-size:11px; padding:10px 14px; border-radius:8px; line-height:1.7;
+  }
+  .debug-box .raw-key{color:#79C9BE; margin-right:8px; text-transform:uppercase;}
+  .debug-box code{color:#EAF2F0; word-break:break-all;}
+  .badge{
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:10.5px; font-weight:600; padding:3px 7px; border-radius:20px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .badge.ok{background:var(--teal-light); color:var(--teal);}
+  .badge.warn{background:var(--amber-light); color:var(--amber); border:1px dashed var(--amber-line);}
+  .badge-mrn{display:inline-block; margin-left:6px; padding:1px 6px; border-radius:6px; font-size:10px; font-weight:700; background:#EAF2F0; color:#3E7C74; vertical-align:middle;}
+  .rowbtns{display:flex; gap:6px;}
+  .iconbtn{
+    border:none; background:transparent; color:#9AAFAA; cursor:pointer; font-size:14px;
+    width:24px; height:24px; border-radius:6px;
+  }
+  .iconbtn:hover{background:var(--coral-light); color:var(--coral);}
+  .warnlist{margin-top:10px; font-size:12px; color:var(--amber);}
+  .warnlist span{display:block; margin-bottom:2px;}
+
+  .footer-actions{
+    display:flex; align-items:center; justify-content:space-between; margin-top:18px; flex-wrap:wrap; gap:10px;
+  }
+  .footer-actions .left-note{font-size:12px; color:var(--ink-soft);}
+  .footer-actions .buttons{display:flex; gap:10px;}
+
+  .empty-hint{
+    text-align:center; padding:26px 10px; color:var(--ink-soft); font-size:13px;
+  }
+
+  footer.pagefoot{
+    text-align:center; color:#8A9C97; font-size:11.5px; margin-top:34px; letter-spacing:.02em;
+  }
+
+  @media (max-width:640px){
+    header.top{padding:22px 18px;}
+    header.top h1{font-size:21px;}
+    section.card{padding:18px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <svg class="route" viewBox="0 0 260 180" fill="none">
+      <path d="M10 150 C 60 120, 90 160, 130 110 S 210 40, 250 30" stroke="#79C9BE" stroke-width="2" stroke-dasharray="6 6"/>
+      <circle cx="10" cy="150" r="4" fill="#79C9BE"/>
+      <circle cx="250" cy="30" r="5" fill="#EAF2F0"/>
+      <path d="M244 24 L256 24 L253 30 L247 30 Z" fill="#EAF2F0"/>
+    </svg>
+    <p class="eyebrow">PYONGTAEK PORT · 화물료 / 항만보안료</p>
+    <h1>고지서 → 엑셀 자동입력</h1>
+    <p class="sub">평택지방해양수산청 납입고지서 PDF를 올리면 화물료·항만보안료·정산일을 읽어 업로드용 엑셀(Sheet3 서식)로 만들어 드려요.</p>
+  </header>
+
+  <!-- 1. 선박코드 매칭 테이블 -->
+  <section class="card">
+    <div class="mapping-toggle" id="mappingToggle">
+      <h2><span class="num">01</span> 선박명 ↔ 선박코드 매칭 테이블</h2>
+      <span class="chev">▸</span>
+    </div>
+    <div id="mappingBody">
+      <p class="desc">고지서의 선명(예: 나고아 트레이더)과 엑셀에서 쓰는 선박코드(예: NGTR)를 여기서 관리해요. 파싱한 선명이 목록에 없으면 표에서 바로 코드를 입력해 추가할 수 있어요.</p>
+      <p class="desc" id="storageNote" style="margin-top:-10px;"></p>
+      <div class="map-list" id="mapList"></div>
+      <div class="map-add">
+        <input type="text" id="newMapName" placeholder="선명 (예: 나고아 트레이더)">
+        <input type="text" id="newMapCode" placeholder="선박코드 (예: NGTR)" style="max-width:160px;">
+        <button class="btn ghost" id="addMapBtn">+ 추가</button>
+        <button class="btn ghost" id="resetMapBtn" title="선박코드가 이상하게(예: 4글자여야 하는데 3글자로) 저장되어 있을 때 기본값으로 되돌려요">기본값으로 초기화</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. MRN 대사표 업로드 (항차 자동보정용) -->
+  <section class="card">
+    <h2><span class="num">02</span> MRN 대사표 업로드 <span style="font-weight:400;font-size:13px;color:#7a8a86;">(선택 — 항차 자동보정용)</span></h2>
+    <p class="desc">항차가 자동으로 안 채워질 때를 대비해서, MRN 대사표(.xlsx)를 올려두시면 도움이 돼요.</p>
+    <div id="mrnDropzone" class="dropzone-small">
+      <div class="icon">📋</div>
+      <div class="main" id="mrnStatus">클릭해서 MRN 대사표(.xlsx) 선택 또는 여기로 드래그</div>
+    </div>
+    <input type="file" id="mrnFileInput" accept=".xlsx,.xls">
+  </section>
+
+  <!-- 3. 업로드 -->
+  <section class="card">
+    <h2><span class="num">03</span> 고지서 PDF 업로드</h2>
+    <p class="desc">한 파일에 여러 건(여러 페이지)이 섞여 있어도 괜찮아요. 이 PDF들은 텍스트가 아니라 그림(스캔/벡터) 형태라서 화면에서 직접 읽어내는 OCR 방식으로 처리해요 — 페이지당 몇 초씩 걸리고, 100% 정확하진 않으니 다운로드 전에 표에서 한 번씩 확인해주세요. 평택지방해양수산청의 표준 서식 기준으로 맞춰져 있어요. 항차가 고지서에 직접 인쇄되어 있지 않으면, 위에서 MRN 대사표를 올려둔 경우 자동으로 대사표 조회로 채우고 <span class="badge-mrn" style="margin-left:0;">MRN</span> 표시를 붙여드려요.</p>
+    <div id="dropzone">
+      <div class="icon">⚓</div>
+      <div class="main">클릭해서 PDF 선택 또는 여기로 드래그</div>
+      <div class="hint">평택지방해양수산청 납입고지서(.pdf) · 여러 파일 가능 · OCR로 처리되어 다소 시간이 걸려요</div>
+    </div>
+    <input type="file" id="fileInput" accept="application/pdf" multiple>
+    <div id="fileList"></div>
+    <div id="status"></div>
+  </section>
+
+  <!-- 3. 결과 미리보기 -->
+  <section class="card" id="resultsSection">
+    <h2><span class="num">04</span> 파싱 결과 확인 &amp; 수정</h2>
+    <p class="desc">노란 배경 행은 확인이 필요해요. 값을 직접 고치거나, 선박코드가 비어있으면 입력 후 매칭 테이블에 저장할 수 있어요.</p>
+    <div class="table-scroll">
+      <table class="results">
+        <thead>
+          <tr>
+            <th>원본</th>
+            <th>선명</th>
+            <th>선박코드</th>
+            <th>항차</th>
+            <th>발생일자</th>
+            <th>정산일(납기내)</th>
+            <th>화물료</th>
+            <th>항만보안료</th>
+            <th>상태</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+    <div class="footer-actions">
+      <div class="left-note" id="summaryNote"></div>
+      <div class="buttons">
+        <button class="btn ghost" id="clearBtn">전체 지우기</button>
+        <button class="btn dark" id="exportBtn" disabled>엑셀 다운로드 (.xlsx)</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">장금상선 해운팀 내부용 · 모든 처리는 브라우저 안에서만 이루어져요 (서버 업로드 없음)</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ---------------------------------------------------------------
+  // storage helper (falls back to memory if window.storage missing)
+  // ---------------------------------------------------------------
+  const memoryStore = {};
+  let storageMode = 'unknown'; // 'claude' | 'local' | 'memory'
+
+  async function storeGet(key){
+    try{
+      if (window.storage){
+        const r = await window.storage.get(key, false);
+        storageMode = 'claude';
+        return r ? r.value : null;
+      }
+    }catch(e){ /* key not found, fall through to try local storage */ }
+    try{
+      const v = window.localStorage.getItem(key);
+      storageMode = 'local';
+      return v;
+    }catch(e){ /* localStorage blocked (rare) */ }
+    storageMode = 'memory';
+    return memoryStore[key] || null;
+  }
+  async function storeSet(key, value){
+    try{
+      if (window.storage){
+        await window.storage.set(key, value, false);
+        storageMode = 'claude';
+        return;
+      }
+    }catch(e){ /* fall through */ }
+    try{
+      window.localStorage.setItem(key, value);
+      storageMode = 'local';
+      return;
+    }catch(e){ /* fall through */ }
+    storageMode = 'memory';
+    memoryStore[key] = value;
+  }
+
+  // ---------------------------------------------------------------
+  // vessel mapping table
+  // ---------------------------------------------------------------
+  const DEFAULT_MAP = {
+    "나고아 트레이더": "NGTR",
+    "SAWASDEE DENEB": "SWDN",
+    "ATLANTIC PIONEER": "ATPR",
+    "PACIFIC SINGAPORE": "PCSG",
+    "PEGASUS PROTO": "PGPO",
+    "SAWASDEE CAPELLA": "SWCP",
+    "SITC MOJI": "SIMJ",
+    "SITC SENDAI": "STSD",
+    "XINQUNDAO": "XQD",
+    "낭보 트레이더": "NBTD",
+    "동진콘티넨탈": "DJCO",
+    "동진콘피던트": "DJCF",
+    "사왓디 리겔": "SWRG",
+    "싸왓디 아틀란틱": "SWAT",
+    "요코하마 트레이더": "YKTD",
+    "퍼시픽 베이징": "PCBJ",
+    "퍼시픽 센제": "PCSZ"
+  };
+  let vesselMap = {};
+
+  async function loadMapping(){
+    const raw = await storeGet('vessel-map');
+    if (raw){
+      try{ vesselMap = JSON.parse(raw); }catch(e){ vesselMap = {...DEFAULT_MAP}; }
+    } else {
+      vesselMap = {...DEFAULT_MAP};
+      await storeSet('vessel-map', JSON.stringify(vesselMap));
+    }
+    renderMapList();
+    renderStorageNote();
+  }
+  function renderStorageNote(){
+    const el = document.getElementById('storageNote');
+    if (!el) return;
+    if (storageMode === 'claude'){
+      el.textContent = '저장 위치: Claude 계정에 저장됨 (어느 기기에서 열어도 유지돼요)';
+    } else if (storageMode === 'local'){
+      el.textContent = '저장 위치: 이 브라우저에 저장됨 (같은 브라우저·같은 기기에서 새로고침해도 유지돼요. 시크릿모드/캐시삭제 시 사라질 수 있어요)';
+    } else {
+      el.textContent = '⚠ 저장소를 사용할 수 없어 새로고침하면 초기화돼요.';
+    }
+  }
+  async function saveMapping(){
+    await storeSet('vessel-map', JSON.stringify(vesselMap));
+    renderStorageNote();
+  }
+  function renderMapList(){
+    const el = document.getElementById('mapList');
+    const names = Object.keys(vesselMap);
+    if (names.length === 0){
+      el.innerHTML = '<span style="font-size:12px;color:var(--ink-soft);">등록된 선박이 없어요. 아래에서 추가해보세요.</span>';
+      return;
+    }
+    el.innerHTML = names.sort().map(name => `
+      <span class="map-chip" data-name="${escapeAttr(name)}">
+        <span class="name">${escapeHtml(name)}</span>
+        <span class="code">${escapeHtml(vesselMap[name])}</span>
+        <button title="삭제" data-remove="${escapeAttr(name)}">×</button>
+      </span>
+    `).join('');
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function escapeAttr(s){ return escapeHtml(s); }
+
+  document.getElementById('mapList').addEventListener('click', async (e) => {
+    const rm = e.target.getAttribute('data-remove');
+    if (rm){
+      delete vesselMap[rm];
+      await saveMapping();
+      renderMapList();
+    }
+  });
+  document.getElementById('addMapBtn').addEventListener('click', async () => {
+    const nameEl = document.getElementById('newMapName');
+    const codeEl = document.getElementById('newMapCode');
+    const name = nameEl.value.trim();
+    const code = codeEl.value.trim().toUpperCase();
+    if (!name || !code) return;
+    vesselMap[name] = code;
+    await saveMapping();
+    renderMapList();
+    nameEl.value = ''; codeEl.value = '';
+    // if any parsed invoice matches this name, auto-fill it
+    invoices.forEach(inv => { if (inv.vesselName === name && !inv.code) inv.code = code; });
+    renderResults();
+  });
+  document.getElementById('resetMapBtn').addEventListener('click', async () => {
+    if (!confirm('선박명↔선박코드 매칭 테이블을 기본값으로 되돌릴까요? 직접 추가한 항목은 사라져요.')) return;
+    vesselMap = { ...DEFAULT_MAP };
+    await saveMapping();
+    renderMapList();
+    renderResults();
+  });
+
+  const mappingToggle = document.getElementById('mappingToggle');
+  const mappingBody = document.getElementById('mappingBody');
+  mappingToggle.addEventListener('click', () => {
+    mappingToggle.classList.toggle('open');
+    mappingBody.classList.toggle('open');
+  });
+
+  // ---------------------------------------------------------------
+  // pdf.js setup (used here only to RENDER pages to canvas - these
+  // invoices have no real text layer, only vector artwork, so we
+  // OCR cropped regions of the rendered page instead of reading text)
+  // ---------------------------------------------------------------
+  const pdfjsLib = window['pdfjsLib'];
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const RENDER_SCALE = 8; // resolution used for the OCR crops (A4 -> ~4760x6736px canvas region-by-region, not the full page at once)
+
+  // Calibrated against 평택지방해양수산청 표준 고지서 서식 (A4, 595x842pt).
+  // Each region is a fraction of the page width/height.
+  const CROPS = {
+    name:  { x0:0.02,  y0:0.370,  x1:0.30,  y1:0.387,  lang:'koreng', psm:7 },
+    wharf: { x0:0.02,  y0:0.524,  x1:0.30,  y1:0.548,  lang:'koreng', psm:6 },
+    sec:   { x0:0.02,  y0:0.540,  x1:0.30,  y1:0.564,  lang:'koreng', psm:6 },
+    voy:   { x0:0.02,  y0:0.570,  x1:0.32,  y1:0.615,  lang:'eng',    psm:6 },
+    callBlock: { x0:0.02, y0:0.380, x1:0.32, y1:0.424, lang:'eng', psm:6 },
+    basis: { x0:0.02, y0:0.552, x1:0.34, y1:0.588, lang:'kor', psm:7 },
+    due:   { x0:0.591, y0:0.453,  x1:0.734, y1:0.473,  lang:'kor',    psm:7 },
+    stamp: { x0:0.3361,y0:0.6076, x1:0.4650,y1:0.6274,  lang:'kor',    psm:7 },
+    preview:{x0:0.02,  y0:0.355,  x1:0.30,  y1:0.61,   lang:null,     psm:null }
+  };
+
+  async function renderFullPageCanvas(page, scale){
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    return canvas;
+  }
+
+  function cropFromCanvas(sourceCanvas, region){
+    const sw = sourceCanvas.width, sh = sourceCanvas.height;
+    const sx = region.x0 * sw, sy = region.y0 * sh;
+    const cw = (region.x1 - region.x0) * sw, ch = (region.y1 - region.y0) * sh;
+    const out = document.createElement('canvas');
+    out.width = Math.max(1, Math.round(cw));
+    out.height = Math.max(1, Math.round(ch));
+    const ctx = out.getContext('2d');
+    ctx.drawImage(sourceCanvas, sx, sy, cw, ch, 0, 0, out.width, out.height);
+    return out;
+  }
+
+  function toMinChannelGray(canvas){
+    // takes min(R,G,B) per pixel -> makes colored (e.g. red) text as dark as black text,
+    // which OCR engines trained mostly on black-on-white handle far better
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = imgData.data;
+    for (let i = 0; i < d.length; i += 4){
+      const v = Math.min(d[i], d[i+1], d[i+2]);
+      d[i] = d[i+1] = d[i+2] = v;
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
+  }
+
+  // upscales a (usually small) crop before OCR - Tesseract.js in the browser
+  // has been observed to do noticeably worse than a desktop OCR engine on tiny
+  // crops, and simply feeding it a bigger version of the same crop closes most
+  // of that gap without touching anything else in the pipeline
+  function upscaleCanvas(canvas, factor){
+    const out = document.createElement('canvas');
+    out.width = Math.round(canvas.width * factor);
+    out.height = Math.round(canvas.height * factor);
+    const ctx = out.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(canvas, 0, 0, out.width, out.height);
+    return out;
+  }
+
+  // ---------------------------------------------------------------
+  // Tesseract.js OCR workers (lazy-init, reused across the session)
+  // ---------------------------------------------------------------
+  let workerKorEng = null, workerKor = null, workerEng = null;
+  async function getWorker(lang){
+    if (lang === 'koreng'){
+      if (!workerKorEng) workerKorEng = await Tesseract.createWorker('kor+eng');
+      return workerKorEng;
+    }
+    if (lang === 'kor'){
+      if (!workerKor) workerKor = await Tesseract.createWorker('kor');
+      return workerKor;
+    }
+    if (!workerEng) workerEng = await Tesseract.createWorker('eng');
+    return workerEng;
+  }
+
+  async function ocrRegion(fullCanvas, key){
+    const region = CROPS[key];
+    const canvas = toMinChannelGray(cropFromCanvas(fullCanvas, region));
+    const worker = await getWorker(region.lang);
+    const params = { tessedit_pageseg_mode: String(region.psm) };
+    // no character whitelist here: some invoices prefix the voyage with the
+    // vessel code on the same line (e.g. "PCSG 2611E") - the regex below still
+    // finds the voyage pattern fine, and restricting characters didn't help
+    await worker.setParameters(params);
+    const { data } = await worker.recognize(canvas);
+    return { text: data.text || '', canvas };
+  }
+
+  function parseVoyageFromText(text){
+    const clean = text.toUpperCase().replace(/\s+/g, '').replace(/O(?=\d)|(?<=\d)O/g, '0');
+    const m = clean.match(/(\d{3,4}[EWNS])/);
+    if (m) return m[1];
+    // common OCR confusion in this font: trailing "S" misread as "5"
+    const fallback = clean.match(/(\d{3,4})5\b/);
+    if (fallback) return fallback[1] + 'S';
+    return null;
+  }
+
+  // Tesseract.js in the browser has proven less reliable than a desktop OCR
+  // engine on this specific crop (same image, worse read - see debug notes),
+  // so rather than trust a single pass, this tries a few progressively more
+  // aggressive variations (larger upscale, different page-segmentation mode,
+  // slightly wider crop) and stops as soon as one of them yields a match.
+  async function extractVoyage(fullCanvas){
+    const worker = await getWorker('eng');
+    const baseRegion = CROPS.voy;
+    const attempts = [
+      { scale: 2, psm: '6', region: baseRegion },
+      { scale: 3, psm: '7', region: baseRegion },
+      { scale: 4, psm: '11', region: baseRegion },
+      { scale: 3, psm: '6', region: { ...baseRegion, x0: Math.max(0, baseRegion.x0 - 0.02), x1: baseRegion.x1 + 0.04, y1: baseRegion.y1 + 0.02 } },
+    ];
+    let lastText = '';
+    let lastCanvas = null;
+    for (const attempt of attempts){
+      const rawCrop = cropFromCanvas(fullCanvas, attempt.region);
+      const upscaled = upscaleCanvas(rawCrop, attempt.scale);
+      const canvas = toMinChannelGray(upscaled);
+      await worker.setParameters({ tessedit_pageseg_mode: attempt.psm });
+      const { data } = await worker.recognize(canvas);
+      const text = data.text || '';
+      lastText = text;
+      lastCanvas = canvas;
+      const voyage = parseVoyageFromText(text);
+      if (voyage) return { voyage, text, canvas, attempts: attempts.indexOf(attempt) + 1 };
+    }
+    return { voyage: null, text: lastText, canvas: lastCanvas, attempts: attempts.length };
+  }
+
+  function parseCallBlock(text){
+    const lines = String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
+    // line 1: "호출부호   9V7919" (label often garbled by OCR) - the call sign is
+    // always the LAST alnum token on that line
+    const line0 = (lines[0] || '').toUpperCase();
+    const callTokens = line0.match(/[A-Z0-9]{4,8}/g) || [];
+    const callSign = callTokens.length ? callTokens[callTokens.length - 1] : null;
+    // line 2: "항  차   2026   017" - year + 입항횟수, take the LAST digit group
+    const line1 = lines[1] || '';
+    const nums = line1.match(/\d+/g) || [];
+    const count = nums.length ? nums[nums.length - 1] : null;
+    return { callSign, count };
+  }
+
+  function parseBasis(text){
+    const t = String(text || '');
+    if (t.includes('입항')) return 'I';
+    // "출항" is sometimes misread as "졸항"/"출향" etc - anything with 항
+    // preceded by a non-입 character after "외항선" counts as departure
+    if (t.includes('출항') || t.includes('졸항') || t.includes('출향')) return 'E';
+    return null;
+  }
+
+  // Retry helper shared by the call-sign/count block and the 입항/출항 line:
+  // tries a small number of scale/psm combinations and returns as soon as
+  // parseFn extracts something usable.
+  async function ocrLineWithRetries(fullCanvas, region, worker, variants, parseFn){
+    let lastText = '';
+    for (const v of variants){
+      const rawCrop = cropFromCanvas(fullCanvas, region);
+      const canvas = toMinChannelGray(v.scale > 1 ? upscaleCanvas(rawCrop, v.scale) : rawCrop);
+      await worker.setParameters({ tessedit_pageseg_mode: v.psm });
+      const { data } = await worker.recognize(canvas);
+      const text = data.text || '';
+      lastText = text;
+      const parsed = parseFn(text);
+      if (parsed) return { parsed, text };
+    }
+    return { parsed: null, text: lastText };
+  }
+
+  // Fallback used when the direct red-text voyage OCR fails: reads the
+  // 항차(입항횟수) + 산출근거(입항/출항) fields, then looks the real VOY up
+  // in the MRN 대사표 the person uploaded - preferring the already-resolved
+  // vessel code (VSL) as the lookup key since it's far more reliable than
+  // OCR'ing the 호출부호(call sign), and only falling back to the call sign
+  // (exact, then fuzzy-corrected against the sheet's own known list) if the
+  // vessel code isn't available or doesn't match.
+  async function lookupVoyageFromMrn(fullCanvas, vslCode){
+    if (!mrnLoaded) return { voyage: null, callSign: null, count: null, basis: null, callText: '', basisText: '', matchedBy: null };
+    const engWorker = await getWorker('eng');
+    const korWorker = await getWorker('kor');
+    const callResult = await ocrLineWithRetries(
+      fullCanvas, CROPS.callBlock, engWorker,
+      [{ scale:1, psm:'6' }, { scale:2, psm:'6' }, { scale:1, psm:'4' }, { scale:3, psm:'6' }, { scale:2, psm:'11' }],
+      (text) => { const p = parseCallBlock(text); return p.count ? p : null; }
+    );
+    const basisResult = await ocrLineWithRetries(
+      fullCanvas, CROPS.basis, korWorker,
+      [{ scale:1, psm:'7' }, { scale:2, psm:'7' }, { scale:1, psm:'6' }, { scale:3, psm:'7' }, { scale:2, psm:'6' }],
+      (text) => parseBasis(text)
+    );
+    const callSignRaw = callResult.parsed ? callResult.parsed.callSign : null;
+    const count = callResult.parsed ? callResult.parsed.count : null;
+    const basis = basisResult.parsed || null;
+
+    function pick(entry){
+      if (!entry) return null;
+      if (basis && entry[basis]) return entry[basis];
+      if (!basis){
+        // couldn't tell 입항/출항 apart - if only one direction exists for
+        // this call, that's unambiguous enough to use
+        const values = Object.values(entry);
+        if (values.length === 1) return values[0];
+      }
+      return null;
+    }
+
+    let voyage = null, matchedBy = null;
+    // Whether we have a trustworthy "no data for this vessel" signal already:
+    // a properly-formed 4-letter code that simply isn't in the sheet. In that
+    // case we deliberately do NOT fall back to call-sign guessing, because
+    // any match found there would necessarily belong to a DIFFERENT vessel
+    // (since we already know this one isn't present) - e.g. 동진콘피던트
+    // (DJCF) has no MRN entry, but guessing via a garbled call sign could
+    // easily land on 동진콘티넨탈's (DJCO) voyage instead of staying blank.
+    let vslConfidentlyAbsent = false;
+    if (count){
+      if (vslCode){
+        voyage = pick(vslMap[mrnKey(vslCode, count)]);
+        if (voyage) matchedBy = 'vsl';
+        if (!voyage && vslCode.length === 4){
+          // it's a well-formed code (all real codes are exactly 4 letters),
+          // so trust that if this exact code+count isn't in the sheet the
+          // vessel genuinely has no entry there
+          vslConfidentlyAbsent = true;
+        }
+        // only try to "correct" the vessel code if it doesn't already look
+        // like a well-formed code (real codes are always exactly 4 letters) -
+        // a valid 4-char code that simply isn't in the sheet almost always
+        // means the vessel genuinely has no entry there, NOT a typo. Fuzzy-
+        // correcting in that case is actively wrong: two different real
+        // vessels can have codes only 1 letter apart (e.g. DJCF vs DJCO), and
+        // "correcting" one into the other would silently hand back someone
+        // else's voyage instead of leaving the field blank as it should be.
+        if (!voyage && vslCode.length !== 4){
+          const correctedVsl = fuzzyMatchVsl(vslCode);
+          if (correctedVsl && correctedVsl !== vslCode.toUpperCase()){
+            voyage = pick(vslMap[mrnKey(correctedVsl, count)]);
+            if (voyage) matchedBy = 'vsl-fuzzy';
+          }
+        }
+      }
+      if (!voyage && !vslConfidentlyAbsent && callSignRaw){
+        voyage = pick(mrnMap[mrnKey(callSignRaw, count)]);
+        if (voyage) matchedBy = 'callsign';
+      }
+      if (!voyage && !vslConfidentlyAbsent && callSignRaw){
+        const corrected = fuzzyMatchCallSign(callSignRaw);
+        if (corrected){
+          voyage = pick(mrnMap[mrnKey(corrected, count)]);
+          if (voyage) matchedBy = 'callsign-fuzzy';
+        }
+      }
+    }
+    return { voyage, callSign: callSignRaw, count, basis, callText: callResult.text, basisText: basisResult.text, matchedBy };
+  }
+
+  function stripNameLabel(raw){
+    let s = String(raw || '').replace(/\n/g, ' ').trim().replace(/^[|\s]+/, '');
+    if (/명/.test(s)) s = s.replace(/^.*?명\s*/, '').trim();
+    else s = s.replace(/^선\s+/, '').replace(/^[|:.\-\s]+/, '').trim();
+    // when the "명" label wasn't recognized at all, OCR sometimes leaves a short
+    // lowercase Latin fragment where the label used to be (e.g. "of 닝보 트레이더") -
+    // real vessel names here are always either full-uppercase English or Korean
+    s = s.replace(/^[a-z]{1,3}\s+/, '').trim();
+    return s;
+  }
+
+  async function ocrVesselName(fullCanvas){
+    const region = CROPS.name;
+    const canvas = toMinChannelGray(cropFromCanvas(fullCanvas, region));
+
+    const comboWorker = await getWorker('koreng');
+    await comboWorker.setParameters({ tessedit_pageseg_mode: '7' });
+    const comboOut = await comboWorker.recognize(canvas);
+    const comboText = comboOut.data.text || '';
+    // check Hangul count only in the part AFTER the "선 명" label - the label
+    // itself is Hangul, so counting the raw text would always read >=2 and
+    // never trigger the fallback below, even when the actual name is garbled
+    const comboStripped = stripNameLabel(comboText);
+    const comboHangul = (comboStripped.match(/[가-힣]/g) || []).length;
+
+    // Safety net for a specific failure mode: the combined kor+eng model
+    // occasionally hallucinates pure-Latin garbage out of a pure-Korean name.
+    // A real vessel name here is always either fully Korean or fully
+    // uppercase English - never a mix of stray lowercase Latin fragments and
+    // Hangul syllables - so that specific mixed pattern (e.g. "wpstc] 아틀란틱",
+    // missing the "싸왓디" that should be there) is a reliable corruption
+    // signature even when the combo pass still found *some* real Hangul.
+    const looksMixed = /[a-z]/.test(comboStripped) && comboHangul > 0;
+
+    let text = comboText;
+    if (comboHangul === 0 || looksMixed){
+      const korWorker = await getWorker('kor');
+      await korWorker.setParameters({ tessedit_pageseg_mode: '7' });
+      const korOut = await korWorker.recognize(canvas);
+      const korText = korOut.data.text || '';
+      const korHangul = (stripNameLabel(korText).match(/[가-힣]/g) || []).length;
+      if (korHangul >= 3 && korHangul >= comboHangul) text = korText;
+    }
+    return { text, canvas };
+  }
+
+  // ---------------------------------------------------------------
+  // Levenshtein-based fuzzy vessel-name matching (OCR isn't perfect,
+  // especially on Korean vessel names, so exact match is too strict)
+  // ---------------------------------------------------------------
+  function levenshtein(a, b){
+    const m = a.length, n = b.length;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++){
+      for (let j = 1; j <= n; j++){
+        dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+      }
+    }
+    return dp[m][n];
+  }
+  function normalizeVesselName(s){
+    return String(s || '').replace(/\s+/g, '').toUpperCase();
+  }
+  function fuzzyMatchVessel(name){
+    const target = normalizeVesselName(name);
+    if (!target) return null;
+    let best = null, bestDist = Infinity;
+    for (const n of Object.keys(vesselMap)){
+      const d = levenshtein(target, normalizeVesselName(n));
+      if (d < bestDist){ bestDist = d; best = n; }
+    }
+    // allow ~34% of characters to differ (OCR on multi-syllable Korean names
+    // routinely misreads 1-2 syllables even when the rest is read correctly)
+    if (best && bestDist <= Math.max(1, Math.ceil(normalizeVesselName(best).length * 0.34))){
+      return { name: best, code: vesselMap[best], distance: bestDist };
+    }
+    return null;
+  }
+
+  // ---------------------------------------------------------------
+  // per-page OCR pipeline
+  // ---------------------------------------------------------------
+  function lastNumber(text){
+    // OCR occasionally misreads the thousands-separator comma as a period
+    // (e.g. "16,590" -> "16.590"), and sometimes inserts a stray space next to it
+    // (e.g. "728 ,260") - both would otherwise split one number into two matches
+    // and silently keep the wrong (smaller) piece, so normalize first.
+    const cleaned = text.replace(/(\d)\s+([,.])/g, '$1$2').replace(/([,.])\s+(\d)/g, '$1$2');
+    const matches = cleaned.match(/[0-9][0-9,.]*[0-9]|[0-9]/g);
+    if (!matches || matches.length === 0) return null;
+    const raw = matches[matches.length - 1].replace(/[,.]/g, '');
+    const n = parseInt(raw, 10);
+    return isNaN(n) ? null : n;
+  }
+  function parseDateText(text){
+    const fixed = text.replace(/여/g, '01'); // known OCR confusion: "01" often misread as "여" in this font
+    const m = fixed.match(/(\d{4})\D{0,3}(\d{1,2})\D{0,3}(\d{1,2})/);
+    if (!m) return null;
+    return m[1] + m[2].padStart(2,'0') + m[3].padStart(2,'0');
+  }
+
+  async function processPage(page, sourceLabel){
+    const fullCanvas = await renderFullPageCanvas(page, RENDER_SCALE);
+
+    const nameRes = await ocrVesselName(fullCanvas);
+    const wharfRes = await ocrRegion(fullCanvas, 'wharf');
+    const secRes = await ocrRegion(fullCanvas, 'sec');
+    const voyRes = await extractVoyage(fullCanvas);
+    const dueRes = await ocrRegion(fullCanvas, 'due');
+    const stampRes = await ocrRegion(fullCanvas, 'stamp');
+
+    const hasContent = (wharfRes.text.replace(/\D/g,'').length > 0) || (nameRes.text.trim().length > 1);
+    if (!hasContent) return null;
+
+    const warnings = [];
+
+    let vesselName = stripNameLabel(nameRes.text);
+    if (!vesselName) warnings.push('선명 인식 실패');
+
+    const wharfAmount = lastNumber(wharfRes.text);
+    const secAmount = lastNumber(secRes.text);
+    if (wharfAmount === null) warnings.push('화물료 인식 실패');
+    if (secAmount === null) warnings.push('항만보안료 인식 실패');
+
+    let code = '';
+    let fuzzyNote = null;
+    if (vesselName){
+      if (vesselMap[vesselName]){
+        code = vesselMap[vesselName];
+      } else {
+        const normTarget = normalizeVesselName(vesselName);
+        const exactNorm = Object.keys(vesselMap).find(n => normalizeVesselName(n) === normTarget);
+        if (exactNorm){
+          code = vesselMap[exactNorm];
+        } else {
+          const fm = fuzzyMatchVessel(vesselName);
+          if (fm){ code = fm.code; fuzzyNote = fm.name; }
+        }
+      }
+    }
+
+    let voyage = voyRes.voyage;
+    let voyageSource = voyage ? 'ocr' : null;
+    let mrnInfo = null;
+    if (!voyage && mrnLoaded){
+      // the vessel code (VSL, e.g. "NGTR") we just resolved from the vessel
+      // name is far more reliable than OCR'ing the 호출부호(call sign) - it's
+      // a short known list matched with fuzzy-correction, whereas the call
+      // sign is an arbitrary alphanumeric string OCR loves to mangle (O/0,
+      // T/1, G/6...) - so try VSL-based lookup first and only fall back to
+      // reading the call sign off the page if that comes up empty.
+      mrnInfo = await lookupVoyageFromMrn(fullCanvas, code);
+      if (mrnInfo.voyage){ voyage = mrnInfo.voyage; voyageSource = 'mrn'; }
+    }
+    if (!voyage) warnings.push('항차 인식 실패');
+
+    const dueDate = parseDateText(dueRes.text);
+    const issueDate = parseDateText(stampRes.text);
+    if (!dueDate) warnings.push('정산일 인식 실패');
+    if (!issueDate) warnings.push('발생일자 인식 실패');
+
+    const previewCanvas = cropFromCanvas(fullCanvas, CROPS.preview);
+
+    return {
+      id: 'inv_' + Math.random().toString(36).slice(2,9),
+      source: sourceLabel,
+      vesselName, code, voyage, voyageSource, issueDate, dueDate, wharfAmount, secAmount,
+      warnings, fuzzyNote,
+      thumb: previewCanvas.toDataURL('image/jpeg', 0.85),
+      raw: {
+        name: nameRes.text, wharf: wharfRes.text, sec: secRes.text,
+        voy: voyRes.text, due: dueRes.text, stamp: stampRes.text,
+        voy_attempt: voyRes.attempts,
+        mrn_call: mrnInfo ? mrnInfo.callText : undefined,
+        mrn_basis: mrnInfo ? mrnInfo.basisText : undefined,
+        mrn_parsed: mrnInfo ? `${mrnInfo.callSign||'?'} / ${mrnInfo.count||'?'} / ${mrnInfo.basis||'?'} / matched:${mrnInfo.matchedBy||'없음'}` : undefined
+      }
+    };
+  }
+
+  // ---------------------------------------------------------------
+  // state + rendering
+  // ---------------------------------------------------------------
+  let invoices = [];
+
+  function setStatus(msg, spinning){
+    const el = document.getElementById('status');
+    el.innerHTML = msg ? (spinning ? '<span class="dot"></span>' : '') + '<span>' + escapeHtml(msg) + '</span>' : '';
+  }
+
+  function fmtDateForInput(yyyymmdd){
+    if (!yyyymmdd || yyyymmdd.length !== 8) return '';
+    return yyyymmdd.slice(0,4) + '-' + yyyymmdd.slice(4,6) + '-' + yyyymmdd.slice(6,8);
+  }
+  function parseDateInput(v){
+    if (!v) return null;
+    const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return m ? (m[1]+m[2]+m[3]) : null;
+  }
+
+  function invoiceProblems(inv){
+    const p = [];
+    if (!inv.code) p.push('선박코드 없음');
+    if (!inv.voyage) p.push('항차 없음');
+    if (!inv.issueDate) p.push('발생일자 없음');
+    if (!inv.dueDate) p.push('정산일 없음');
+    if (inv.wharfAmount === null || inv.wharfAmount === undefined || isNaN(inv.wharfAmount)) p.push('화물료 없음');
+    if (inv.secAmount === null || inv.secAmount === undefined || isNaN(inv.secAmount)) p.push('항만보안료 없음');
+    return p;
+  }
+
+  // 항차는 MRN 대사표에 애초에 정보가 없는 경우도 있어서, 없다고 해서 다운로드
+  // 자체를 막지는 않아요 (엑셀엔 빈 칸으로 나가고, 나머지 문제는 여전히 막아요) -
+  // invoiceProblems()는 화면에 노란 경고 표시용으로 그대로 두고, 다운로드 가능
+  // 여부는 이 함수로 따로 판단해요.
+  function invoiceBlockingProblems(inv){
+    return invoiceProblems(inv).filter(p => p !== '항차 없음');
+  }
+
+  function renderResults(){
+    const section = document.getElementById('resultsSection');
+    const body = document.getElementById('resultsBody');
+    if (invoices.length === 0){
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = 'block';
+    body.innerHTML = invoices.map(inv => {
+      const problems = invoiceProblems(inv);
+      const rowClass = problems.length ? 'warn' : '';
+      const rawRows = inv.raw ? Object.entries(inv.raw).map(([k,v]) =>
+        `<div><span class="raw-key">${escapeHtml(k)}</span><code>${escapeHtml(JSON.stringify(v))}</code></div>`
+      ).join('') : '';
+      return `
+        <tr class="${rowClass}" data-id="${inv.id}">
+          <td><img class="thumb" src="${inv.thumb}" alt="원본 미리보기" onclick="window.open(this.src)"></td>
+          <td class="vessel-cell">${escapeHtml(inv.vesselName || '(선명 미확인)')}${inv.fuzzyNote ? `<div class="fuzzy-note">≈ ${escapeHtml(inv.fuzzyNote)} 로 추정매칭</div>` : ''}</td>
+          <td><input type="text" data-field="code" value="${escapeAttr(inv.code||'')}" placeholder="코드 입력" class="${!inv.code?'bad':''}" style="max-width:90px;"></td>
+          <td><input type="text" data-field="voyage" value="${escapeAttr(inv.voyage||'')}" placeholder="예: 2540W" class="${!inv.voyage?'bad':''}" style="max-width:90px;">${inv.voyageSource==='mrn' ? '<span class="badge-mrn" title="MRN 대사표에서 조회한 값이에요 - 한 번 확인해주세요">MRN</span>' : ''}</td>
+          <td><input type="date" data-field="issueDate" value="${fmtDateForInput(inv.issueDate)}" class="${!inv.issueDate?'bad':''}"></td>
+          <td><input type="date" data-field="dueDate" value="${fmtDateForInput(inv.dueDate)}" class="${!inv.dueDate?'bad':''}"></td>
+          <td><input type="number" data-field="wharfAmount" value="${inv.wharfAmount ?? ''}" class="amt-input ${inv.wharfAmount==null?'bad':''}"></td>
+          <td><input type="number" data-field="secAmount" value="${inv.secAmount ?? ''}" class="amt-input ${inv.secAmount==null?'bad':''}"></td>
+          <td class="badge-cell">${problems.length ? `<span class="badge warn">확인필요 · ${problems.length}</span>` : '<span class="badge ok">✓ 준비됨</span>'}</td>
+          <td class="rowbtns">
+            <button class="iconbtn" data-toggle-debug title="원본 인식 텍스트 보기">🔍</button>
+            <button class="iconbtn" data-remove-row title="삭제">✕</button>
+          </td>
+        </tr>
+        <tr class="debug-row" data-debug-for="${inv.id}" style="display:none;">
+          <td colspan="9"><div class="debug-box">${rawRows}</div></td>
+        </tr>
+      `;
+    }).join('');
+
+    const readyCount = invoices.filter(i => invoiceBlockingProblems(i).length === 0).length;
+    document.getElementById('summaryNote').textContent =
+      `${invoices.length}건 파싱됨 · ${readyCount}건 다운로드 준비완료`;
+    document.getElementById('exportBtn').disabled = readyCount === 0 || readyCount !== invoices.length;
+  }
+
+  // NOTE: this used to call the full renderResults() on every keystroke, which
+  // rebuilds the entire table's innerHTML and kicks focus out of whatever input
+  // the person was typing in (so e.g. the 항차/voyage field looked "impossible"
+  // to edit - you'd get kicked out after a single character). We now update the
+  // underlying data and only the small bits of UI that need to change (the "bad"
+  // highlight on the field itself, the row's warn state, its status badge, and
+  // the overall summary line) without touching the input elements themselves.
+  document.getElementById('resultsBody').addEventListener('input', (e) => {
+    const tr = e.target.closest('tr');
+    if (!tr) return;
+    const id = tr.getAttribute('data-id');
+    const inv = invoices.find(i => i.id === id);
+    if (!inv) return;
+    const field = e.target.getAttribute('data-field');
+    if (!field) return;
+    if (field === 'issueDate' || field === 'dueDate'){
+      inv[field] = parseDateInput(e.target.value);
+    } else if (field === 'wharfAmount' || field === 'secAmount'){
+      inv[field] = e.target.value === '' ? null : Number(e.target.value);
+    } else if (field === 'code'){
+      inv.code = e.target.value.trim().toUpperCase();
+    } else {
+      inv[field] = e.target.value.trim();
+    }
+    updateRowLite(tr, inv);
+  });
+
+  // Lightweight per-row refresh used while typing: no innerHTML rebuild, so the
+  // field the person is actively editing keeps focus and cursor position.
+  function updateRowLite(tr, inv){
+    const problems = invoiceProblems(inv);
+    tr.classList.toggle('warn', problems.length > 0);
+
+    // amount/code fields validate against null/empty; text-ish fields (voyage,
+    // vessel name) validate against the trimmed value already stored on inv.
+    tr.querySelectorAll('[data-field]').forEach(input => {
+      const f = input.getAttribute('data-field');
+      let isBad;
+      if (f === 'wharfAmount' || f === 'secAmount') isBad = inv[f] == null;
+      else if (f === 'issueDate' || f === 'dueDate') isBad = !inv[f];
+      else isBad = !inv[f];
+      // don't fight the person's cursor by touching the input they're
+      // currently focused on beyond the class toggle (no value/re-render)
+      input.classList.toggle('bad', !!isBad);
+    });
+
+    const badgeCell = tr.querySelector('.badge-cell');
+    if (badgeCell){
+      badgeCell.innerHTML = problems.length
+        ? `<span class="badge warn">확인필요 · ${problems.length}</span>`
+        : '<span class="badge ok">✓ 준비됨</span>';
+    }
+
+    const readyCount = invoices.filter(i => invoiceBlockingProblems(i).length === 0).length;
+    document.getElementById('summaryNote').textContent =
+      `${invoices.length}건 파싱됨 · ${readyCount}건 다운로드 준비완료`;
+    document.getElementById('exportBtn').disabled = readyCount === 0 || readyCount !== invoices.length;
+  }
+
+  document.getElementById('resultsBody').addEventListener('click', async (e) => {
+    const tr = e.target.closest('tr');
+    if (!tr) return;
+    const id = tr.getAttribute('data-id');
+    if (e.target.hasAttribute('data-remove-row')){
+      invoices = invoices.filter(i => i.id !== id);
+      renderResults();
+      return;
+    }
+    if (e.target.hasAttribute('data-toggle-debug')){
+      const debugRow = document.querySelector(`tr.debug-row[data-debug-for="${id}"]`);
+      if (debugRow) debugRow.style.display = debugRow.style.display === 'none' ? '' : 'none';
+      return;
+    }
+  });
+
+  // when a code is typed for an unmatched vessel, offer to remember it
+  document.getElementById('resultsBody').addEventListener('change', async (e) => {
+    if (e.target.getAttribute('data-field') !== 'code') return;
+    const tr = e.target.closest('tr');
+    const id = tr.getAttribute('data-id');
+    const inv = invoices.find(i => i.id === id);
+    if (!inv || !inv.vesselName || !inv.code) return;
+    if (vesselMap[inv.vesselName] !== inv.code){
+      vesselMap[inv.vesselName] = inv.code;
+      await saveMapping();
+      renderMapList();
+    }
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    invoices = [];
+    document.getElementById('fileList').innerHTML = '';
+    renderResults();
+    setStatus('');
+  });
+
+  // ---------------------------------------------------------------
+  // MRN 대사표 (호출부호 + 입항횟수 + 입항/출항 -> 실제 VOY) - 항차가
+  // 고지서에 직접 인쇄되어 있지 않은 경우의 보정용 조회 테이블
+  // ---------------------------------------------------------------
+  let mrnMap = {};    // key: `${CALLSIGN}_${count3digit}` -> { I: 'xxxxE', E: 'xxxxW' }
+  let vslMap = {};    // key: `${VSL}_${count3digit}` -> { I: 'xxxxE', E: 'xxxxW' } (VSL = 선박코드, e.g. NGTR)
+  let knownCallSigns = [];
+  let knownVslCodes = [];
+  let mrnLoaded = false;
+
+  function mrnKey(id, count){
+    const c = String(count).replace(/\D/g,'').padStart(3,'0');
+    return `${id}_${c}`;
+  }
+
+  function buildMrnMaps(workbook){
+    const byCall = {}, byVsl = {};
+    const callSigns = new Set(), vslCodes = new Set();
+    workbook.SheetNames.forEach(sheetName => {
+      const ws = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+      let curCallSign = null, curVsl = null, curCount = null;
+      rows.forEach(row => {
+        if (!row || row.length === 0) return;
+        const callSign = row[0] ? String(row[0]).trim().toUpperCase() : null;
+        const vsl = row[2] ? String(row[2]).trim().toUpperCase() : null;
+        const voy = row[3] ? String(row[3]).trim().toUpperCase() : null;
+        const count = row[4] ? String(row[4]).trim() : null;
+        const flag = row[7] ? String(row[7]).trim().toUpperCase() : null; // I / E
+        if (callSign) curCallSign = callSign;
+        if (vsl) curVsl = vsl;
+        if (count) curCount = count;
+        if (!curCount || !voy || (flag !== 'I' && flag !== 'E')) return;
+        if (curCallSign){
+          callSigns.add(curCallSign);
+          const k = mrnKey(curCallSign, curCount);
+          if (!byCall[k]) byCall[k] = {};
+          byCall[k][flag] = voy;
+        }
+        if (curVsl){
+          vslCodes.add(curVsl);
+          const k2 = mrnKey(curVsl, curCount);
+          if (!byVsl[k2]) byVsl[k2] = {};
+          byVsl[k2][flag] = voy;
+        }
+      });
+    });
+    return { byCall, byVsl, callSigns: [...callSigns], vslCodes: [...vslCodes] };
+  }
+
+  // corrects OCR noise in a call sign (O/0, T/1, G/6, I/1 etc confusions) by
+  // finding the closest match among call signs actually present in the
+  // uploaded MRN sheet - a small closed set, so this is safe and effective
+  function fuzzyMatchCallSign(raw){
+    if (!raw || !knownCallSigns.length) return null;
+    const target = raw.toUpperCase();
+    let best = null, bestDist = Infinity;
+    for (const cs of knownCallSigns){
+      const dist = levenshtein(target, cs);
+      if (dist < bestDist){ bestDist = dist; best = cs; }
+    }
+    if (best && bestDist <= Math.max(1, Math.ceil(best.length * 0.34))) return best;
+    return null;
+  }
+
+  // same idea but for the vessel code (VSL) - protects against a stale/typo'd
+  // code sitting in the person's saved 선박명↔선박코드 매칭 테이블 (e.g. "NGT"
+  // instead of "NGTR") by snapping it to the closest real VSL in the sheet
+  function fuzzyMatchVsl(raw){
+    if (!raw || !knownVslCodes.length) return null;
+    const target = raw.toUpperCase();
+    if (knownVslCodes.includes(target)) return target;
+    let best = null, bestDist = Infinity;
+    for (const v of knownVslCodes){
+      const dist = levenshtein(target, v);
+      if (dist < bestDist){ bestDist = dist; best = v; }
+    }
+    if (best && bestDist <= 1) return best; // vessel codes are short (4 chars) - only allow a 1-char slip
+    return null;
+  }
+
+  const mrnDropzone = document.getElementById('mrnDropzone');
+  const mrnFileInput = document.getElementById('mrnFileInput');
+  const mrnStatusEl = document.getElementById('mrnStatus');
+
+  async function loadMrnFile(file){
+    if (!file) return;
+    mrnStatusEl.textContent = '읽는 중...';
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const built = buildMrnMaps(wb);
+      mrnMap = built.byCall;
+      vslMap = built.byVsl;
+      knownCallSigns = built.callSigns;
+      knownVslCodes = built.vslCodes;
+      mrnLoaded = Object.keys(vslMap).length > 0 || Object.keys(mrnMap).length > 0;
+      mrnDropzone.classList.toggle('loaded', mrnLoaded);
+      mrnStatusEl.textContent = mrnLoaded
+        ? `✓ ${file.name} 불러옴 (선박코드 기준 ${Object.keys(vslMap).length}건 / 호출부호 기준 ${Object.keys(mrnMap).length}건) — 다시 선택하려면 클릭`
+        : `${file.name}에서 유효한 행을 못 찾았어요. 서식을 확인해주세요.`;
+    } catch (err){
+      mrnStatusEl.textContent = '읽기 실패: ' + err.message;
+      mrnLoaded = false;
+    }
+  }
+
+  mrnDropzone.addEventListener('click', () => mrnFileInput.click());
+  mrnFileInput.addEventListener('change', () => {
+    const file = mrnFileInput.files[0];
+    mrnFileInput.value = '';
+    loadMrnFile(file);
+  });
+  ['dragenter','dragover'].forEach(evt => mrnDropzone.addEventListener(evt, (e) => {
+    e.preventDefault(); mrnDropzone.classList.add('drag');
+  }));
+  ['dragleave','drop'].forEach(evt => mrnDropzone.addEventListener(evt, (e) => {
+    e.preventDefault(); mrnDropzone.classList.remove('drag');
+  }));
+  mrnDropzone.addEventListener('drop', (e) => {
+    const file = Array.from(e.dataTransfer.files).find(f => /\.(xlsx|xls)$/i.test(f.name));
+    if (file) loadMrnFile(file);
+  });
+
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  dropzone.addEventListener('click', () => fileInput.click());
+  ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+    e.preventDefault(); dropzone.classList.add('drag');
+  }));
+  ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+    e.preventDefault(); dropzone.classList.remove('drag');
+  }));
+  dropzone.addEventListener('drop', (e) => {
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+    if (files.length) handleFiles(files);
+  });
+  fileInput.addEventListener('change', () => {
+    const files = Array.from(fileInput.files);
+    if (files.length) handleFiles(files);
+    fileInput.value = '';
+  });
+
+  async function handleFiles(files){
+    const fileListEl = document.getElementById('fileList');
+    for (const file of files){
+      const row = document.createElement('div');
+      row.className = 'file-row';
+      row.innerHTML = `<span class="fname">${escapeHtml(file.name)}</span><span class="fsize">${(file.size/1024).toFixed(0)} KB</span>`;
+      fileListEl.appendChild(row);
+    }
+    setStatus('OCR 엔진 준비 중… (최초 1회, 10~20초 소요될 수 있어요)', true);
+    let newCount = 0;
+    try{
+      for (const file of files){
+        const buf = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+        for (let i = 1; i <= pdf.numPages; i++){
+          setStatus(`${file.name} · 페이지 ${i}/${pdf.numPages} 인식 중…`, true);
+          const page = await pdf.getPage(i);
+          const inv = await processPage(page, `${file.name} p.${i}`);
+          if (inv){
+            invoices.push(inv);
+            newCount++;
+            renderResults();
+          }
+        }
+      }
+      setStatus(newCount ? `${newCount}건을 새로 인식했어요. 값을 한 번씩 확인해주세요.` : '이 PDF에서 고지서 항목을 찾지 못했어요.', false);
+    }catch(err){
+      console.error(err);
+      setStatus(`처리 중 오류가 발생했어요: ${err.message}`, false);
+    }
+    renderResults();
+  }
+
+  // ---------------------------------------------------------------
+  // excel export
+  // ---------------------------------------------------------------
+  const HEADERS = ["순번","거래처코드","거래처명","계정과목","계정과목명","비용증빙타입","증빙번호","거래처인보이스번호",
+    "비용코드","비용명","적요","발생일자","통화","환율단위(발생:원화)","환율(발생:로컬)","발생금액","부가세액(발생)",
+    "원화금액","부가세액(원화)","세금그룹","선주비용","선박코드","선박명","항차","포트코드","포트명","참조타입","참조번호",
+    "시작시간","종료시간","저장품코드","저장품명","공급일자","수량","단가","실부서코드","실부서명","실사용자명","정산여부",
+    "미결번호","그룹미결번호","지급타입","정산일","지급통화","지급거래처코드","지급거래처명","거래처계좌순번","거래처은행명",
+    "거래처계좌번호","지로번호"];
+
+  function buildRow(inv, kind, seq){
+    const isWharf = kind === 'wharf';
+    const costCode = isWharf ? '50093' : '50094';
+    const costName = isWharf ? '부두사용료(WHARFAGE)' : '화물보안료';
+    const amount = isWharf ? inv.wharfAmount : inv.secAmount;
+    return [
+      seq, '79798', '평택지방해양수산청', 2001, '외상매입금(원화)', '기타증빙', '', '',
+      costCode, costName, costName, Number(inv.issueDate), 'KRW', 1, 1, Number(amount)||0, 0,
+      0, 0, '인보이스', 'N', inv.code || '', '', inv.voyage || '', 'KRPTK', 'PYONGTAEK,KOREA', '없음', '',
+      '', '', '', '', '', 0, 0, '', '', '', 'N',
+      '', '', '현금지급', Number(inv.dueDate), 'KRW', '79798', '평택지방해양수산청', '', '',
+      '', ''
+    ];
+  }
+
+  function exportExcel(){
+    const ready = invoices.filter(i => invoiceBlockingProblems(i).length === 0);
+    if (ready.length === 0) return;
+    const aoa = [HEADERS];
+    ready.forEach(inv => {
+      const seq = aoa.length; // header is row index 0, so next row number
+      aoa.push(buildRow(inv, 'wharf', seq));
+      aoa.push(buildRow(inv, 'sec', seq + 1));
+    });
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    // 원화금액 = P column formula, column index 17 (0-based), rows 1..N
+    for (let r = 1; r < aoa.length; r++){
+      const ref = XLSX.utils.encode_cell({ r, c: 17 });
+      const pRef = 'P' + (r + 1);
+      ws[ref] = { t: 'n', f: pRef };
+    }
+    ws['!cols'] = HEADERS.map((h,i) => ({ wch: i===2||i===44? 20 : (i===9||i===10?22: 12) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet3');
+
+    const now = new Date();
+    const stamp = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0')
+      + '_' + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
+    XLSX.writeFile(wb, `화물료_보안료_UPLOAD_${stamp}.xlsx`);
+  }
+
+  document.getElementById('exportBtn').addEventListener('click', exportExcel);
+
+  // ---------------------------------------------------------------
+  // init
+  // ---------------------------------------------------------------
+  loadMapping();
+  renderResults();
+})();
+</script>
+</body>
+</html>
